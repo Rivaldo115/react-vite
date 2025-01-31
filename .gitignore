@@ -7,18 +7,34 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Node Modules (Railway instala dependencias automáticamente)
+node_modules/
+
+# Carpetas de salida de producción (Railway generará esto en el servidor)
+dist/
+dist-ssr/
+
+# Archivos de entorno (evita subir credenciales o variables sensibles)
+.env
+.env.local
+.env.development
+.env.production
 
 # Editor directories and files
-.vscode/*
+.vscode/
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Archivos de dependencias lock innecesarios (si solo usas npm)
+yarn.lock
+pnpm-lock.yaml
+
+# RailWay (asegurar que no se ignore)
+!railway.json
+

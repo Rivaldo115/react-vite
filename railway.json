@@ -1,0 +1,9 @@
+{
+    "build": {
+      "command": "npm install && npm run build"
+    },
+    "start": {
+      "command": "npx serve -s dist"
+    }
+  }
+  
