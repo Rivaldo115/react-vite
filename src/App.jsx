@@ -99,10 +99,10 @@ function App() {
     formData.append("keywords", keywords);
     formData.append("inclusions", inclusions);
     formData.append("exclusions", exclusions);
-
+    //http://127.0.0.1:5000/analyze
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/analyze",
+        "https://flask-backend-wispy-forest-3182.fly.dev/analyze",
         formData,
         { cancelToken: source.token }
       );
