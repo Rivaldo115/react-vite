@@ -9,7 +9,6 @@ import BasicPie from "./assets/Materials/Pie";
 import TextField from "@mui/material/TextField";
 import HelpButton from "./assets/Materials/HelpButton";
 import HelpButton2 from "./assets/Materials/HelpButton2";
-import MaterialTitle from "./assets/Materials/MaterialTitle";
 import { Modal } from "@mui/material";
 
 function App() {
@@ -33,17 +32,6 @@ function App() {
   const [cancelTokenSource, setCancelTokenSource] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pieData, setPieData] = useState([]);
-
-  const sxStatistics = {
-    width: {
-      xs: "80%",
-      sm: "80%",
-      md: "15%",
-      lg: "15%",
-      xl: "15%",
-    },
-    transition: "all 0.5s ease-in-out",
-  };
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -102,7 +90,7 @@ function App() {
     //http://127.0.0.1:5000/analyze
     try {
       const response = await axios.post(
-        "https://flask-backend-wispy-forest-3182.fly.dev/analyze",
+        "http://127.0.0.1:5000/analyze",
         formData,
         { cancelToken: source.token }
       );
@@ -178,15 +166,15 @@ function App() {
 
     const filteredResults = data.filter((result) => {
       total++;
-      if (result.Relevancia && result.Relevancia > 0.50) {
+      if (result.Relevancia && result.Relevancia > 0.5) {
         aceptado++;
-        if (result.Relevancia >= 0.50 && result.Relevancia < 0.70) {
+        if (result.Relevancia >= 0.5 && result.Relevancia < 0.7) {
           group50to69++;
           group50to69Data.push(result);
-        } else if (result.Relevancia >= 0.70 && result.Relevancia < 0.90) {
+        } else if (result.Relevancia >= 0.7 && result.Relevancia < 0.9) {
           group70to89++;
           group70to89Data.push(result);
-        } else if (result.Relevancia >= 0.90 && result.Relevancia <= 1) {
+        } else if (result.Relevancia >= 0.9 && result.Relevancia <= 1) {
           group90to100++;
           group90to100Data.push(result);
         }
@@ -260,135 +248,293 @@ function App() {
 
   return (
     <div className="full-screen">
-      <h1>Análisis de Artículos</h1>
-      <HelpButton />
-      {warning && <p style={{ color: "red" }}>{warning}</p>}
-      <Box className="row">
-        <Box className="column" sx={{ width: "50%" }}>
-          <Box className="row">
-            <Box className="column" sx={{ width: "50%" }}>
-              <Typography variant="h6">Cargar Archivo CSV:</Typography>
-            </Box>
-            <Box className="column" sx={{ width: "50%" }}>
-              <input type="file" accept=".csv" onChange={handleFileChange} />
-            </Box>
-          </Box>
-          <Box className="row">
-            <Box className="column" sx={{ width: "50%" }}>
-              <Typography variant="h6">Campo de Estudio:</Typography>
-            </Box>
-            <Box className="column" sx={{ width: "100%" }}>
-              <TextField
-                id="keyword-input"
-                label="Ingresa el campo de estudio"
-                variant="outlined"
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                fullWidth
-              />
-            </Box>
-          </Box>
-          <Box
-            className="row"
-            sx={{
-              justifyContent: "space-between",
-              display: "flex",
-              gap: 2,
-              marginTop: 2,
-            }}
-          >
-            <Box className="column" sx={{ flex: 1 }}>
-              <Typography variant="h6">Criterios de Inclusión</Typography>
-            </Box>
-            <Box className="column" sx={{ width: "45%" }}>
-              <TextField
-                id="keyword-input"
-                label="Ingresa los criterios de inclusión"
-                variant="outlined"
-                value={inclusions}
-                onChange={(e) => setInclusions(e.target.value)}
-                fullWidth
-                multiline
-                maxRows={4}
-                InputProps={{
-                  style: {
-                    overflowY: "auto",
-                    whiteSpace: "pre-wrap",
-                  },
-                }}
-              />
-            </Box>
-            <HelpButton2 />
-            <Box className="column" sx={{ flex: 1 }}>
-              <Typography variant="h6">Criterios de Exclusión</Typography>
-            </Box>
-            <Box className="column" sx={{ width: "45%" }}>
-              <TextField
-                id="keyword-input"
-                label="Ingresa los criterios de exclusión"
-                variant="outlined"
-                value={exclusions}
-                onChange={(e) => setExclusions(e.target.value)}
-                fullWidth
-                multiline
-                maxRows={4}
-                InputProps={{
-                  style: {
-                    overflowY: "auto",
-                    whiteSpace: "pre-wrap",
-                  },
-                }}
-              />
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 3,
+          padding: 5,
+          color: "inherit",
+          minHeight: "100vh",
+        }}
+      >
+        <Typography variant="h3" fontWeight="bold">
+          Análisis de Artículos
+        </Typography>
 
-      <Box>
+        <Typography
+          variant="h6"
+          sx={{ textAlign: "center", maxWidth: "60%", color: "inherit" }}
+        >
+          Para utilizar esta aplicación, sube un archivo CSV que contenga los
+          artículos que deseas analizar. Luego, ingresa el campo de estudio y
+          define los criterios de inclusión y exclusión estos deben estar en
+          ingles. Finalmente, presiona el botón Analizar para procesar y
+          confirmar los datos y obtener las estadísticas correspondientes.
+        </Typography>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            width: "60%",
+            gap: 2,
+          }}
+        >
+          <Typography variant="h6">Cargar Archivo CSV:</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <input type="file" accept=".csv" onChange={handleFileChange} />
+            <HelpButton />
+          </Box>
+          {file && (
+            <Typography variant="body2">
+              Archivo seleccionado: {file.name}
+            </Typography>
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            width: "60%",
+            gap: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "inherit" }}>
+            <Typography variant="h6">Campo de Estudio</Typography>
+          </Box>
+          <TextField
+            label="Campo de Estudio"
+            variant="outlined"
+            value={keywords}
+            onChange={(e) => setKeywords(e.target.value)}
+            fullWidth
+            sx={{
+              "& .MuiInputBase-input": {
+                color: "black", // Modo claro por defecto
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "black",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "black",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "black",
+              },
+              "& .MuiInputLabel-root": {
+                color: "black", // Color del label en modo claro
+              },
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "black",
+              },
+              "& .MuiInputBase-input::placeholder": {
+                color: "rgba(0, 0, 0, 0.5)", // Placeholder en modo claro
+              },
+              "@media (prefers-color-scheme: dark)": {
+                "& .MuiInputBase-input": {
+                  color: "white", // Texto en modo oscuro
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "white", // Borde en modo oscuro
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "white",
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "white",
+                },
+                "& .MuiInputLabel-root": {
+                  color: "white !important", // Forzar el label en modo oscuro
+                },
+                "& .MuiInputLabel-root.Mui-focused": {
+                  color: "white !important",
+                },
+                "& .MuiInputBase-input::placeholder": {
+                  color: "rgba(255, 255, 255, 0.5)", // Placeholder en modo oscuro
+                },
+              },
+            }}
+          />
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            width: "60%",
+            gap: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "inherit" }}>
+            <Typography variant="h6">Criterios de Inclusión</Typography>
+            <HelpButton2 />
+          </Box>
+          <TextField
+            label="Ingresa los criterios de inclusión"
+            variant="outlined"
+            value={inclusions}
+            onChange={(e) => setInclusions(e.target.value)}
+            fullWidth
+            multiline
+            rows={3}
+            sx={{
+              "& .MuiInputBase-input": {
+                color: "black", // Modo claro por defecto
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "black",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "black",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "black",
+              },
+              "& .MuiInputLabel-root": {
+                color: "black", // Color del label en modo claro
+              },
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "black",
+              },
+              "& .MuiInputBase-input::placeholder": {
+                color: "rgba(0, 0, 0, 0.5)", // Placeholder en modo claro
+              },
+              "@media (prefers-color-scheme: dark)": {
+                "& .MuiInputBase-input": {
+                  color: "white", // Texto en modo oscuro
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "white", // Borde en modo oscuro
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "white",
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "white",
+                },
+                "& .MuiInputLabel-root": {
+                  color: "white !important", // Forzar el label en modo oscuro
+                },
+                "& .MuiInputLabel-root.Mui-focused": {
+                  color: "white !important",
+                },
+                "& .MuiInputBase-input::placeholder": {
+                  color: "rgba(255, 255, 255, 0.5)", // Placeholder en modo oscuro
+                },
+              },
+            }}
+          />
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            width: "60%",
+            gap: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="h6">Criterios de Exclusión</Typography>
+            <HelpButton2 />
+          </Box>
+          <TextField
+            label="Ingresa los criterios de exclusión"
+            variant="outlined"
+            value={exclusions}
+            onChange={(e) => setExclusions(e.target.value)}
+            fullWidth
+            multiline
+            rows={3}
+            sx={{
+              "& .MuiInputBase-input": {
+                color: "black", // Modo claro por defecto
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "black",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "black",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "black",
+              },
+              "& .MuiInputLabel-root": {
+                color: "black", // Color del label en modo claro
+              },
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "black",
+              },
+              "& .MuiInputBase-input::placeholder": {
+                color: "rgba(0, 0, 0, 0.5)", // Placeholder en modo claro
+              },
+              "@media (prefers-color-scheme: dark)": {
+                "& .MuiInputBase-input": {
+                  color: "white", // Texto en modo oscuro
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "white", // Borde en modo oscuro
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "white",
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "white",
+                },
+                "& .MuiInputLabel-root": {
+                  color: "white !important", // Forzar el label en modo oscuro
+                },
+                "& .MuiInputLabel-root.Mui-focused": {
+                  color: "white !important",
+                },
+                "& .MuiInputBase-input::placeholder": {
+                  color: "rgba(255, 255, 255, 0.5)", // Placeholder en modo oscuro
+                },
+              },
+            }}
+          />
+        </Box>
+
         <Button
-          onClick={handleOpenModal}
-          disabled={isLoad}
           variant="contained"
-          sx={{ margin: 5, textTransform: "none" }}
+          color="primary"
+          onClick={handleOpenModal}
+          sx={{ textTransform: "none" }}
         >
-          <Typography variant="h6">Analizar</Typography>
+          Analizar
         </Button>
-        <Modal
-          open={isModalOpen}
-          onClose={handleCloseModal}
-          aria-labelledby="modal-title"
-          aria-describedby="modal-description"
-        >
+
+        <Modal open={isModalOpen} onClose={handleCloseModal}>
           <Box
             sx={{
               position: "absolute",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              bgcolor: "#333", // Fondo oscuro
-              color: "#fff", // Texto blanco para contraste
+              bgcolor: "#333",
+              color: "inherit",
               boxShadow: 24,
               p: 4,
               width: 400,
               borderRadius: 2,
             }}
           >
-            <Typography id="modal-title" variant="h6" gutterBottom>
-              Resumen del Análisis
+            <Typography variant="h6">Resumen del Análisis</Typography>
+            <Typography>
+              <strong>Archivo:</strong> {file?.name || "N/A"}
             </Typography>
-            <Typography variant="body1" gutterBottom>
-              <strong>Nombre del Archivo:</strong> {file?.name || "N/A"}
+            <Typography>
+              <strong>Campo de Estudio:</strong> {keywords}
             </Typography>
-            <Typography variant="body1" gutterBottom>
-              <strong>Palabra Clave:</strong> {keywords}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
+            <Typography>
               <strong>Criterios de Inclusión:</strong> {inclusions}
             </Typography>
-            <Typography variant="body1" gutterBottom>
+            <Typography>
               <strong>Criterios de Exclusión:</strong> {exclusions}
             </Typography>
-
             <Box mt={2} display="flex" justifyContent="space-between">
               <Button
                 variant="contained"
@@ -407,92 +553,110 @@ function App() {
             </Box>
           </Box>
         </Modal>
-      </Box>
 
-      <Button
-        onClick={handleManualDownload}
-        variant="contained"
-        sx={{ margin: 5, textTransform: "none" }}
-        disabled={!downloadableFile}
-      >
-        <Typography variant="h6">Descargar Resultados</Typography>
-      </Button>
-      <Box
-        className="row"
-        sx={{
-          justifyContent: "space-around",
-          transition: "all 0.6s ease-in-out",
-          opacity: isLoad ? 1 : 0,
-          transform: isLoad ? "translateY(0)" : "translateY(20px)",
-          visibility: isLoad ? "visible" : "hidden",
-          margin: "30px 0px",
-        }}
-      >
-        <Box className="column" sx={{ width: "100%" }}>
-          <Typography variant="h3">Estadisticas</Typography>
-        </Box>
-      </Box>
-      <Box
-        className="row"
-        sx={{
-          justifyContent: "space-around",
-          transition: "all 0.6s ease-in-out",
-          opacity: isLoadDos ? 1 : 0,
-          transform: isLoadDos ? "translateY(0)" : "translateY(20px)",
-          visibility: isLoadDos ? "visible" : "hidden",
-        }}
-      >
-        <Box className="column card" sx={sxStatistics}>
-          <Typography
-            variant="h5"
-            fontWeight="bold"
-            sx={{ textAlign: "center" }}
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+          <Button
+            onClick={handleManualDownload}
+            variant="contained"
+            sx={{ textTransform: "none", width: "80%", maxWidth: "300px" }}
+            disabled={!downloadableFile}
           >
-            Artículos Procesados
-          </Typography>
-          <Typography variant="h5">{ATotal}</Typography>
+            Descargar Resultados
+          </Button>
         </Box>
-        <Box className="column card" sx={sxStatistics}>
-          <Typography variant="h5" fontWeight="bold">
-            Artículos Aceptados
-          </Typography>
-          <Typography variant="h5">{AAceptado}</Typography>
-        </Box>
-        <Box className="column card" sx={sxStatistics}>
-          <Typography variant="h5" fontWeight="bold">
-            Artículos Negados
-          </Typography>
-          <Typography variant="h5">{ANegado}</Typography>
-        </Box>
-      </Box>
-      <Box
-        className="row"
-        sx={{
-          justifyContent: "space-between",
-          transition: "all 0.6s ease-in-out",
-          opacity: isLoadTres ? 1 : 0,
-          transform: isLoadTres ? "translateY(0)" : "translateY(20px)",
-          visibility: isLoadTres ? "visible" : "hidden",
-          margin: "90px 0px",
-        }}
-      >
+
         <Box
-          className="column card"
-          sx={{ width: "40%", margin: "0px 30px", backgroundColor: "#ffffff" }}
+          className="row"
+          sx={{
+            justifyContent: "center",
+            flexWrap: "wrap",
+            gap: 2,
+            transition: "all 0.6s ease-in-out",
+            opacity: isLoadDos ? 1 : 0,
+            transform: isLoadDos ? "translateY(0)" : "translateY(20px)",
+            visibility: isLoadDos ? "visible" : "hidden",
+          }}
         >
-          <Typography variant="h5" fontWeight="bold" sx={{ color: "black" }}>
-            Gráfico de Relevancias
-          </Typography>
-          <BasicLineChart relevances={relevances} />
+          <Box
+            className="column card"
+            sx={{
+              width: { xs: "90%", sm: "45%", md: "30%" },
+              textAlign: "center",
+            }}
+          >
+            <Typography
+              variant="h5"
+              fontWeight="bold"
+              sx={{ textAlign: "center" }}
+            >
+              Artículos Procesados
+            </Typography>
+            <Typography variant="h5">{ATotal}</Typography>
+          </Box>
+          <Box
+            className="column card"
+            sx={{
+              width: { xs: "90%", sm: "45%", md: "30%" },
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="h5" fontWeight="bold">
+              Artículos Aceptados
+            </Typography>
+            <Typography variant="h5">{AAceptado}</Typography>
+          </Box>
+          <Box
+            className="column card"
+            sx={{
+              width: { xs: "90%", sm: "45%", md: "30%" },
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="h5" fontWeight="bold">
+              Artículos Negados
+            </Typography>
+            <Typography variant="h5">{ANegado}</Typography>
+          </Box>
         </Box>
+
         <Box
-          className="column card"
-          sx={{ width: "40%", margin: "0px 30px", backgroundColor: "#ffffff" }}
+          className="row"
+          sx={{
+            justifyContent: "center",
+            flexWrap: "wrap",
+            transition: "all 0.6s ease-in-out",
+            opacity: isLoadTres ? 1 : 0,
+            transform: isLoadTres ? "translateY(0)" : "translateY(20px)",
+            visibility: isLoadTres ? "visible" : "hidden",
+            margin: "40px 0px",
+            display: "flex",
+            gap: 3,
+          }}
         >
-          <Typography variant="h5" fontWeight="bold" sx={{ color: "black" }}>
-            Distribución por Grupos de Relevancia
-          </Typography>
-          <BasicPie pieData={pieData} />
+          <Box
+            className="column card"
+            sx={{
+              width: { xs: "90%", sm: "45%", md: "40%" },
+              backgroundColor: "#ffffff",
+            }}
+          >
+            <Typography variant="h5" fontWeight="bold" sx={{ color: "black" }}>
+              Gráfico de Relevancias
+            </Typography>
+            <BasicLineChart relevances={relevances} />
+          </Box>
+          <Box
+            className="column card"
+            sx={{
+              width: { xs: "90%", sm: "45%", md: "40%" },
+              backgroundColor: "#ffffff",
+            }}
+          >
+            <Typography variant="h5" fontWeight="bold" sx={{ color: "black" }}>
+              Distribución por Grupos de Relevancia
+            </Typography>
+            <BasicPie pieData={pieData} />
+          </Box>
         </Box>
       </Box>
     </div>
