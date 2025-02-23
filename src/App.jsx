@@ -90,7 +90,7 @@ function App() {
     //http://127.0.0.1:5000/analyze
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/analyze",
+        "https://api-flask-c-fx4a.fly.dev/analyze",
         formData,
         { cancelToken: source.token }
       );
