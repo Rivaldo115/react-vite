@@ -10,9 +10,13 @@ import TextField from "@mui/material/TextField";
 import HelpButton from "./assets/Materials/HelpButton";
 import HelpButton2 from "./assets/Materials/HelpButton2";
 import { Modal } from "@mui/material";
+import { CircularProgress } from "@mui/material";
+import utnLogo from "./assets/img/utn_logo.png";
+import { AppBar, Toolbar } from "@mui/material";
 
 function App() {
   const [file, setFile] = useState(null);
+  const [currentPage, setCurrentPage] = useState("inicio");
   const [keywords, setKeywords] = useState("");
   const [inclusions, setInclusions] = useState("");
   const [exclusions, setExclusions] = useState("");
@@ -34,7 +38,13 @@ function App() {
   const [pieData, setPieData] = useState([]);
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const uploadedFile = e.target.files[0];
+    if (!uploadedFile) return;
+
+    setFile(uploadedFile);
+
+    const baseName = uploadedFile.name.split(".").slice(0, -1).join(".");
+    setKeywords(baseName);
   };
 
   const handleOpenModal = () => {
@@ -88,32 +98,24 @@ function App() {
     formData.append("inclusions", inclusions);
     formData.append("exclusions", exclusions);
     //http://127.0.0.1:5000/analyze
+    //https://api-flask-c-fx4a.fly.dev/analyze
+    //https://api-flask-prod.fly.dev/analyze
+    //https://back-fuerte-1656.fly.dev/analyze
     try {
       const response = await axios.post(
-        "https://api-flask-c-fx4a.fly.dev/analyze",
+        "https://back-fuerte-1656.fly.dev/analyze",
         formData,
         { cancelToken: source.token }
       );
       console.log("Response received:", response.data);
+      console.log(typeof response.data);
+      console.log(Array.isArray(response.data));
 
-      let data;
-      try {
-        const cleanData = response.data.replace(/NaN/g, "null");
-        data = JSON.parse(cleanData);
-      } catch (error) {
-        Swal.fire({
-          title: "Error",
-          text: "Ocurrió un error durante el análisis. Verifica tu archivo e intenta nuevamente.",
-          icon: "error",
-        });
-        console.error("Error durante el analisis:", error);
-        setIsLoad(false);
-        setIsCanceling(false);
-        return;
-      }
+      let data = response.data;
+      
 
       if (!Array.isArray(data)) {
-        console.error("Response data is not an array:", data);
+        console.error("Response data is not an array");
         data = [data];
       }
       console.log("Data after conversion:", data);
@@ -121,15 +123,26 @@ function App() {
 
       handleDownload(data);
     } catch (error) {
+
       if (axios.isCancel(error)) {
         console.log("La solicitud fue cancelada.");
-      } else {
+      } 
+
+      let errorMessage = "Ocurrió un error al realizar la solicitud. Intenta nuevamente.";
+      if (error.response && error.response.data) {
+        if (typeof error.response.data === "string") {
+          errorMessage = error.response.data;
+        }else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
         Swal.fire({
           title: "Error",
-          text: "Ocurrió un error al realizar la solicitud. Intenta nuevamente.",
+          text: errorMessage,
           icon: "error",
         });
+        console.error("Error durante la solicitud:", error);
       }
+
       setIsLoad(false);
       setIsCanceling(false);
     }
@@ -140,91 +153,102 @@ function App() {
     setTimeout(() => setIsLoadTres(true), 3000);
   };
 
-  const handleCancel = () => {
-    if (cancelTokenSource) {
-      cancelTokenSource.cancel("La solicitud fue cancelada por el usuario.");
-      setCancelTokenSource(null);
-      Swal.fire({
-        title: "Cancelado",
-        text: "El análisis fue cancelado.",
-        icon: "info",
-      });
-    }
-  };
+  //const handleCancel = () => {
+    //if (cancelTokenSource) {
+      //cancelTokenSource.cancel("La solicitud fue cancelada por el usuario.");
+      //setCancelTokenSource(null);
+      //Swal.fire({
+        //title: "Cancelado",
+        //text: "El análisis fue cancelado.",
+        //icon: "info",
+      //});
+    //}
+  //};
 
   const handleDownload = (data) => {
-    let total = 0;
-    let aceptado = 0;
-    let negado = 0;
-    let group50to69 = 0;
-    let group70to89 = 0;
-    let group90to100 = 0;
+    
+  let total = 0;
+  let aceptado = 0;
+  let negado = 0;
+  let group50to69 = 0;
+  let group70to89 = 0;
+  let group90to100 = 0;
 
-    const group50to69Data = [];
-    const group70to89Data = [];
-    const group90to100Data = [];
+  const group50to69Data = [];
+  const group70to89Data = [];
+  const group90to100Data = [];
 
-    const filteredResults = data.filter((result) => {
-      total++;
-      if (result.Relevancia && result.Relevancia > 0.5) {
-        aceptado++;
-        if (result.Relevancia >= 0.5 && result.Relevancia < 0.7) {
-          group50to69++;
-          group50to69Data.push(result);
-        } else if (result.Relevancia >= 0.7 && result.Relevancia < 0.9) {
-          group70to89++;
-          group70to89Data.push(result);
-        } else if (result.Relevancia >= 0.9 && result.Relevancia <= 1) {
-          group90to100++;
-          group90to100Data.push(result);
-        }
-        return true;
+  
+  const scores = data
+    .map(r => r.Relevancia)
+    .filter(r => r != null)
+    .sort((a, b) => a - b);
+
+  const idx75 = Math.floor(scores.length * 0.75);
+  const threshold = scores[idx75] ?? 0;   
+  console.log("Umbral percentil-75:", threshold);
+
+  
+  const filteredResults = data.filter((result) => {
+    total++;
+    if (result.Relevancia != null && result.Relevancia >= threshold) {
+      aceptado++;
+      
+      if (result.Relevancia < threshold + (1 - threshold) * 0.5) {
+        group50to69++;
+        group50to69Data.push(result);
+      } else if (result.Relevancia < threshold + (1 - threshold) * 0.8) {
+        group70to89++;
+        group70to89Data.push(result);
       } else {
-        negado++;
-        return false;
+        group90to100++;
+        group90to100Data.push(result);
       }
-    });
+      return true;
+    } else {
+      negado++;
+      return false;
+    }
+  });
 
-    setATotal(total);
-    setAAceptado(aceptado);
-    setANegado(negado);
+  setATotal(total);
+  setAAceptado(aceptado);
+  setANegado(negado);
 
-    const relevancesData = filteredResults.map((result) => result.Relevancia);
-    setRelevances(relevancesData);
+  const relevancesData = filteredResults.map(r => r.Relevancia);
+  setRelevances(relevancesData);
 
-    const pieData = [
-      { id: 0, value: group50to69, label: "50-69" },
-      { id: 1, value: group70to89, label: "70-89" },
-      { id: 2, value: group90to100, label: "90-100" },
-    ];
+  const pieData = [
+    { id: 0, value: group50to69, label: "A. Baja" },
+    { id: 1, value: group70to89, label: "A. Media" },
+    { id: 2, value: group90to100, label: "A. Alta" },
+  ];
+  setPieData(pieData);
 
-    setPieData(pieData);
+  const worksheet1 = XLSX.utils.json_to_sheet(group50to69Data);
+  const worksheet2 = XLSX.utils.json_to_sheet(group70to89Data);
+  const worksheet3 = XLSX.utils.json_to_sheet(group90to100Data);
 
-    const worksheet1 = XLSX.utils.json_to_sheet(group50to69Data);
-    const worksheet2 = XLSX.utils.json_to_sheet(group70to89Data);
-    const worksheet3 = XLSX.utils.json_to_sheet(group90to100Data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet1, "Aceptación baja");
+  XLSX.utils.book_append_sheet(workbook, worksheet2, "Aceptación media");
+  XLSX.utils.book_append_sheet(workbook, worksheet3, "Aceptación alta");
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet1, "50-69");
-    XLSX.utils.book_append_sheet(workbook, worksheet2, "70-89");
-    XLSX.utils.book_append_sheet(workbook, worksheet3, "90-100");
+  const blob = new Blob(
+    [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
+    { type: "application/octet-stream" }
+  );
+  setDownloadableFile(blob);
+};
 
-    const blob = new Blob(
-      [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-      {
-        type: "application/octet-stream",
-      }
-    );
-    setDownloadableFile(blob);
-    //Hclick();
-  };
 
   const handleManualDownload = () => {
     if (downloadableFile) {
       const url = window.URL.createObjectURL(downloadableFile);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", "results.xlsx");
+      const originalName = file?.name?.split(".").slice(0, -1).join(".") || "resultados";
+      link.setAttribute("download", `${originalName}-Filtrado.xlsx`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -238,16 +262,52 @@ function App() {
     }
   };
 
-  const Hclick = () => {
-    Swal.fire({
-      title: "Archivo listo",
-      text: "Puedes verlo en descargas",
-      icon: "success",
-    });
-  };
+  //const Hclick = () => {
+    //Swal.fire({
+      //title: "Archivo listo",
+      //text: "Puedes verlo en descargas",
+      //icon: "success",
+    //});
+  //};
 
   return (
-    <div className="full-screen">
+    <div className="full-screen" 
+      style={{
+        backgroundImage: `url('https://images.unsplash.com/photo-1751335412320-14cbef56564e?q=80&w=1936&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        minHeight: "100vh",
+      }}
+    >
+      <AppBar position="static" sx={{ backgroundColor: "#b71c1c" }}>
+        <Toolbar>
+          <Box
+            component="img"
+            src={utnLogo}
+            alt="UTN Logo"
+            sx={{ 
+              height: "auto",
+              maxHeight: "50px", // o el tamaño máximo que prefieras
+              width: "auto",
+              marginRight: 2,
+            }}
+          />
+          <Typography variant="h6" sx={{ flexGrow: 1, marginLeft: "0%" }}>
+            Análisis de Artículos UTN
+          </Typography>
+          <Button className="navbar-button" onClick={() => setCurrentPage("inicio")}>
+            Inicio
+          </Button>
+          <Button className="navbar-button" onClick={() => setCurrentPage("ayuda")}>
+            Ayuda
+          </Button>
+          <Button className="navbar-button" onClick={() => setCurrentPage("agradecimientos")}>
+            Agradecimiento
+          </Button>
+        </Toolbar>
+      </AppBar>
+    {currentPage === "inicio" && ( 
       <Box
         sx={{
           display: "flex",
@@ -257,6 +317,11 @@ function App() {
           padding: 5,
           color: "inherit",
           minHeight: "100vh",
+          backgroundColor: "rgba(255, 255, 255, 0.85)",  // blanco semitransparente
+          borderRadius: 2,
+          maxWidth: "900px",
+          margin: "20px auto",
+          boxShadow: "0 0 15px rgba(0,0,0,0.2)",
         }}
       >
         <Typography variant="h3" fontWeight="bold">
@@ -311,52 +376,7 @@ function App() {
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
             fullWidth
-            sx={{
-              "& .MuiInputBase-input": {
-                color: "black", // Modo claro por defecto
-              },
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-              "& .MuiInputLabel-root": {
-                color: "black", // Color del label en modo claro
-              },
-              "& .MuiInputLabel-root.Mui-focused": {
-                color: "black",
-              },
-              "& .MuiInputBase-input::placeholder": {
-                color: "rgba(0, 0, 0, 0.5)", // Placeholder en modo claro
-              },
-              "@media (prefers-color-scheme: dark)": {
-                "& .MuiInputBase-input": {
-                  color: "white", // Texto en modo oscuro
-                },
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "white", // Borde en modo oscuro
-                },
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "white",
-                },
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "white",
-                },
-                "& .MuiInputLabel-root": {
-                  color: "white !important", // Forzar el label en modo oscuro
-                },
-                "& .MuiInputLabel-root.Mui-focused": {
-                  color: "white !important",
-                },
-                "& .MuiInputBase-input::placeholder": {
-                  color: "rgba(255, 255, 255, 0.5)", // Placeholder en modo oscuro
-                },
-              },
-            }}
+            className="custom-textfield"
           />
         </Box>
 
@@ -380,52 +400,7 @@ function App() {
             fullWidth
             multiline
             rows={3}
-            sx={{
-              "& .MuiInputBase-input": {
-                color: "black", // Modo claro por defecto
-              },
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-              "& .MuiInputLabel-root": {
-                color: "black", // Color del label en modo claro
-              },
-              "& .MuiInputLabel-root.Mui-focused": {
-                color: "black",
-              },
-              "& .MuiInputBase-input::placeholder": {
-                color: "rgba(0, 0, 0, 0.5)", // Placeholder en modo claro
-              },
-              "@media (prefers-color-scheme: dark)": {
-                "& .MuiInputBase-input": {
-                  color: "white", // Texto en modo oscuro
-                },
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "white", // Borde en modo oscuro
-                },
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "white",
-                },
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "white",
-                },
-                "& .MuiInputLabel-root": {
-                  color: "white !important", // Forzar el label en modo oscuro
-                },
-                "& .MuiInputLabel-root.Mui-focused": {
-                  color: "white !important",
-                },
-                "& .MuiInputBase-input::placeholder": {
-                  color: "rgba(255, 255, 255, 0.5)", // Placeholder en modo oscuro
-                },
-              },
-            }}
+            className="custom-textfield"
           />
         </Box>
 
@@ -449,52 +424,7 @@ function App() {
             fullWidth
             multiline
             rows={3}
-            sx={{
-              "& .MuiInputBase-input": {
-                color: "black", // Modo claro por defecto
-              },
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "black",
-              },
-              "& .MuiInputLabel-root": {
-                color: "black", // Color del label en modo claro
-              },
-              "& .MuiInputLabel-root.Mui-focused": {
-                color: "black",
-              },
-              "& .MuiInputBase-input::placeholder": {
-                color: "rgba(0, 0, 0, 0.5)", // Placeholder en modo claro
-              },
-              "@media (prefers-color-scheme: dark)": {
-                "& .MuiInputBase-input": {
-                  color: "white", // Texto en modo oscuro
-                },
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "white", // Borde en modo oscuro
-                },
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "white",
-                },
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "white",
-                },
-                "& .MuiInputLabel-root": {
-                  color: "white !important", // Forzar el label en modo oscuro
-                },
-                "& .MuiInputLabel-root.Mui-focused": {
-                  color: "white !important",
-                },
-                "& .MuiInputBase-input::placeholder": {
-                  color: "rgba(255, 255, 255, 0.5)", // Placeholder en modo oscuro
-                },
-              },
-            }}
+            className="custom-textfield"
           />
         </Box>
 
@@ -506,6 +436,18 @@ function App() {
         >
           Analizar
         </Button>
+        {isLoad && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+                    }}
+          >
+            <CircularProgress sx={{ marginBottom: 2 }} />
+            <Typography variant="h6">Procesando el archivo...</Typography>
+          </Box>
+        )}
 
         <Modal open={isModalOpen} onClose={handleCloseModal}>
           <Box
@@ -643,6 +585,9 @@ function App() {
             <Typography variant="h5" fontWeight="bold" sx={{ color: "black" }}>
               Gráfico de Relevancias
             </Typography>
+            <Typography variant="body2" sx={{ color: "gray", mb: 1 }}>
+              Indica el nivel de relevancia de los artículos aceptados
+            </Typography>
             <BasicLineChart relevances={relevances} />
           </Box>
           <Box
@@ -655,10 +600,97 @@ function App() {
             <Typography variant="h5" fontWeight="bold" sx={{ color: "black" }}>
               Distribución por Grupos de Relevancia
             </Typography>
+            <Typography variant="body2" sx={{ color: "gray", mb: 1 }}>
+              Muestra la categoría de los artículos según su relevancia
+            </Typography>
             <BasicPie pieData={pieData} />
           </Box>
         </Box>
       </Box>
+    )}
+    {currentPage === "agradecimientos" && (
+        <Box 
+          sx={{ 
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+            padding: 5,
+            color: "inherit",
+            minHeight: "100vh",
+            backgroundColor: "rgba(255, 255, 255, 0.85)",  // blanco semitransparente
+            borderRadius: 2,
+            maxWidth: "900px",
+            margin: "20px auto",
+            boxShadow: "0 0 15px rgba(0,0,0,0.2)",
+          }}
+        >
+          <Typography variant="h4" gutterBottom>
+            Agradecimientos
+          </Typography>
+          <Typography variant="body1" paragraph>
+            Quiero expresar mi profundo agradecimiento a todas las personas e instituciones que hicieron posible el desarrollo de esta aplicación.
+          </Typography>
+          <Typography variant="body1" paragraph>
+            Agradezco a la Universidad Técnica del Norte (UTN) por brindarme la formación académica y el espacio necesario para el desarrollo de este proyecto de titulación. Asimismo, agradezco a los docentes que guiaron mi proceso de investigación y aplicación de conocimientos técnicos.
+          </Typography>
+          <Typography variant="body1" paragraph>
+            Este proyecto se apoya en el uso de inteligencia artificial para el análisis semántico de artículos científicos. En particular, se utilizó el modelo preentrenado <strong>all-MiniLM-L6-v2</strong>, cuyo repositorio pertenece a <a href="https://github.com/henrytanner52/all-MiniLM-L6-v2" target="_blank" rel="noopener noreferrer">henrytanner52</a>. Este modelo permite la generación de embeddings que ayudan a evaluar la relevancia de los textos con base en palabras clave, criterios de inclusión y exclusión.
+          </Typography>
+          <Typography variant="body1" paragraph>
+            Gracias también a las plataformas de desarrollo y despliegue utilizadas: <strong>Vercel</strong> para el frontend, y <strong>Fly.io</strong> para el backend, que facilitaron la implementación y publicación del sistema.
+          </Typography>
+          <Typography variant="body1" paragraph>
+            La hermosa imagen de fondo utilizada en la aplicación es cortesía del fotógrafo <strong>Aaron Burden</strong>, a través de <a href="https://unsplash.com/es/@aaronburden" target="_blank" rel="noopener noreferrer">Unsplash</a>.
+          </Typography>
+          <Typography variant="body1">
+            Finalmente, agradezco a mi familia y a quienes me brindaron apoyo moral y técnico durante todo el proceso.
+          </Typography>
+        </Box>
+      )}
+      {currentPage === "ayuda" && (
+        <Box 
+          sx={{ 
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+            padding: 5,
+            color: "inherit",
+            minHeight: "100vh",
+            backgroundColor: "rgba(255, 255, 255, 0.85)",  // blanco semitransparente
+            borderRadius: 2,
+            maxWidth: "900px",
+            margin: "20px auto",
+            boxShadow: "0 0 15px rgba(0,0,0,0.2)",
+          }}
+        >
+          <Typography variant="h4" gutterBottom>
+            Guía de Uso
+          </Typography>
+          <Typography variant="body1" paragraph>
+            1. Sube un archivo <code>.csv</code> con las columnas: <strong>Title</strong>, <strong>Abstract</strong> y <strong>DOI</strong>.
+          </Typography>
+          <Typography variant="body1" paragraph>
+            2. Ingresa el campo de estudio en inglés (por ejemplo: <em>sustainable mobility</em>).
+          </Typography>
+          <Typography variant="body1" paragraph>
+            3. Para los criterios de inclusión y exclusión, ingresa cada criterio separado por un punto (<code>.</code>).
+          </Typography>
+          <Typography variant="body1" paragraph>
+            4. Si no tienes criterios para alguna categoría, ingresa un punto (<code>.</code>) en ese campo para continuar.
+          </Typography>
+          <Typography variant="body1" paragraph>
+            5. Presiona el botón <strong>Analizar</strong> para procesar los datos.
+          </Typography>
+          <Typography variant="body1" paragraph>
+            6. Aparecera un cuadro con los datos ingresados, una vez confirmados puedes precionar <strong>Confirmar</strong>.
+          </Typography>
+          <Typography variant="body1">
+            Al finalizar, podrás descargar un archivo con los artículos aceptados y ver estadísticas visuales.
+          </Typography>
+        </Box>
+      )}
     </div>
   );
 }

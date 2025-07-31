@@ -6,7 +6,7 @@ const HelpButton2 = () => {
   const handleHelpClick = () => {
     Swal.fire({
       title: "Ayuda",
-      text: "Cada criterio debe estar separado con un punto para poder filtrar de manera correcta.",
+      text: "Cada criterio debe estar separado con un punto para poder filtrar de manera correcta, en caso de no tener criterios colocar un punto.",
       icon: "info",
       confirmButtonText: "Entendido",
     });

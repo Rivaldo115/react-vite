@@ -74,3 +74,75 @@
   height: auto;
   align-items: center;
 }
+
+.custom-textfield .MuiOutlinedInput-root {
+  color: black;
+  border-color: black;
+}
+
+.custom-textfield .MuiOutlinedInput-notchedOutline {
+  border-color: black;
+}
+
+.custom-textfield:hover .MuiOutlinedInput-notchedOutline {
+  border-color: black;
+}
+
+.custom-textfield.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: black;
+}
+
+/* Label del TextField */
+.custom-textfield .MuiInputLabel-root {
+  color: black;
+}
+
+.custom-textfield.Mui-focused .MuiInputLabel-root {
+  color: black;
+}
+
+/* Modo oscuro */
+@media (prefers-color-scheme: dark) {
+  .custom-textfield .MuiOutlinedInput-root {
+    color: white;
+  }
+
+  .custom-textfield .MuiOutlinedInput-notchedOutline {
+    border-color: white;
+  }
+
+  .custom-textfield:hover .MuiOutlinedInput-notchedOutline,
+  .custom-textfield.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: white;
+  }
+
+  .custom-textfield .MuiInputLabel-root {
+    color: white !important;
+  }
+
+  .custom-textfield.Mui-focused .MuiInputLabel-root {
+    color: white !important;
+  }
+}
+
+.navbar-button {
+  color: white !important;
+  border: 1.5px solid white !important;
+  margin-left: 16px !important;
+  border-radius: 20px !important;
+  text-transform: none !important;
+  transition: background-color 0.3s ease !important;
+  padding: 6px 20px !important;
+  font-weight: 500 !important;
+}
+
+.navbar-button:hover {
+  background-color: #1976d2 !important;
+  border-color: white !important;
+}
+
+
+.logo-fixed {
+  height: 2%;
+  margin-right: 0.2%;
+}
